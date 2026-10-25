@@ -1,0 +1,79 @@
+version: "1"
+kind: miner
+id: 9602
+slug: onchain-metric-publicnode
+protocol: generic
+name: OnChain Metric Verify (PublicNode Ethereum)
+description: Reads canonical on-chain state directly from a full Ethereum RPC node - balances, block data, nonce, code, storage - at latest or any block height. Answers "what is the ETH balance of address X", "what is the current block number", "does contract Y have code" with values read straight from chain.
+base_url: https://ethereum-rpc.publicnode.com
+
+docs:
+  website: https://publicnode.com
+  documentation: https://ethereum.publicnode.com
+
+endpoints:
+  - path: /
+    method: POST
+    description: >
+      JSON-RPC passthrough to a full Ethereum mainnet node. The request body MUST be a complete
+      JSON-RPC 2.0 envelope. Send jsonrpc as the literal string "2.0", id as the literal number 1,
+      method as one of the supported read methods, and params as the JSON array of that method's
+      arguments. Supported read methods and their params arrays -
+      eth_blockNumber takes []; eth_getBalance takes ["0xAddress", "latest" or hex block number];
+      eth_getTransactionCount takes ["0xAddress", "latest"]; eth_getCode takes ["0xAddress", "latest"];
+      eth_getBlockByNumber takes ["latest" or "0xHexBlock", false]; eth_chainId takes [];
+      eth_gasPrice takes []. Address values must be 0x-prefixed 40-hex-character strings.
+      Responses are hex-encoded quantities, e.g. eth_blockNumber returns "0x14a3b2c" which is the
+      block number in decimal. Balances are hex wei. Convert hex to decimal when answering.
+    intents: [ONCHAIN_METRIC_VERIFY]
+    content_type: application/json
+    params:
+      body:
+        required:
+          - name: jsonrpc
+            type: string
+            intents: ["*"]
+            description: 'Always send the literal string "2.0" (JSON-RPC protocol version).'
+          - name: id
+            type: integer
+            intents: ["*"]
+            description: "Always send the literal number 1 (request id)."
+          - name: method
+            type: string
+            intents: ["*"]
+            description: "JSON-RPC read method name, one of: eth_blockNumber, eth_getBalance, eth_getTransactionCount, eth_getCode, eth_getBlockByNumber, eth_chainId, eth_gasPrice."
+          - name: params
+            type: array
+            intents: ["*"]
+            description: "JSON array of the method's arguments. eth_blockNumber and eth_gasPrice and eth_chainId take []. eth_getBalance, eth_getTransactionCount and eth_getCode take [\"0xAddress\", \"latest\"]. eth_getBlockByNumber takes [\"latest\", false]. Addresses are 0x-prefixed 40 hex characters."
+    param_map:
+      jsonrpc: jsonrpc
+      id: id
+      method: method
+      params: params
+
+semantics:
+  supported_intents:
+    - ONCHAIN_METRIC_VERIFY
+
+output_schema:
+  type: object
+  properties:
+    jsonrpc:
+      type: string
+    id:
+      type: integer
+    result:
+      description: Hex-encoded quantity or object, per the requested method. Convert from hex when reporting decimal values.
+    error:
+      description: Present only when the call failed; has code and message.
+
+limitations:
+  - code: MAX_BODY_SIZE
+    message: Keep the JSON-RPC body under 1 KB; read methods only, no eth_sendRawTransaction.
+    property: size_bytes
+    operator: lte
+    value_bytes: 1024
+
+cache_ttl_sec: 2
+rate_limit_per_sec: 20

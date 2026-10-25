@@ -1,0 +1,74 @@
+version: "1"
+kind: miner
+id: 9601
+slug: fx-now-frankfurter
+protocol: generic
+name: FX Now (Frankfurter ECB)
+description: Real-time ECB-referenced foreign exchange mid-market rates for any fiat currency pair, refreshed daily and intraday-cached. Answers "what is 1 USD in EUR right now" style questions with an exact numeric mid-market rate.
+base_url: https://api.frankfurter.dev
+
+docs:
+  website: https://frankfurter.dev
+  documentation: https://frankfurter.dev/docs/
+  repository: https://github.com/fawazahmed0/exchange-api
+
+endpoints:
+  - path: /v1/latest
+    method: GET
+    description: >
+      Latest ECB-referenced mid-market FX rate. Returns {"amount", "base", "date", "rates"}
+      where rates maps each requested quote currency to the amount of that currency per 1 unit
+      of the base currency. Call with base set to the 3-letter ISO currency code you are selling
+      (e.g. USD) and symbols set to the 3-letter ISO code you are buying (e.g. EUR).
+      The answer value for FX_NOW is the number at rates.<quote>, e.g. 0.89342 means 1 USD = 0.89342 EUR.
+    intents: [FX_NOW]
+    params:
+      query:
+        required:
+          - name: base
+            type: string
+            intents: ["*"]
+            description: "Base currency, exactly 3 uppercase ISO 4217 letters, e.g. USD, EUR, GBP. This is the currency being converted FROM."
+          - name: symbols
+            type: string
+            intents: ["*"]
+            description: "Quote currency, exactly 3 uppercase ISO 4217 letters, e.g. EUR, JPY, CHF. This is the currency being converted TO. One code only, no commas."
+    param_map:
+      base: base
+      symbols: symbols
+
+semantics:
+  supported_intents:
+    - FX_NOW
+
+output_schema:
+  type: object
+  properties:
+    amount:
+      type: number
+      description: Always 1.0 for /latest.
+    base:
+      type: string
+      description: Echo of the base currency code.
+    date:
+      type: string
+      description: Rate date, ISO YYYY-MM-DD (ECB reference date).
+    rates:
+      type: object
+      description: Map of quote currency code to numeric rate (quote units per 1 base unit).
+
+limitations:
+  - code: MAX_PARAM_VALUE
+    message: Currency codes must be 3 uppercase ISO 4217 letters; unsupported codes return HTTP 404.
+    param: base
+    property: length
+    operator: eq
+    value_num: 3
+  - code: RATE_LIMIT
+    message: Public instance is rate-limited; keep under ~5 requests per second per client.
+    property: rate
+    value_num: 5
+    window_seconds: 1
+
+cache_ttl_sec: 300
+rate_limit_per_sec: 5

@@ -1,0 +1,99 @@
+version: "1"
+kind: miner
+id: 9603
+slug: weather-verify-openmeteo
+protocol: generic
+name: Weather Forecast Verify (Open-Meteo ICON)
+description: Location-based weather forecast and observation reconciliation from the Open-Meteo aggregator pinned to the ICON model. Answers "what will the temperature/wind/precipitation be at latitude X longitude Y over the next N hours/days" with hourly and daily values in metric units.
+base_url: https://api.open-meteo.com
+
+docs:
+  website: https://open-meteo.com
+  documentation: https://open-meteo.com/en/docs
+
+endpoints:
+  - path: /v1/forecast
+    method: GET
+    description: >
+      Weather forecast for a single point. Required query params are latitude and longitude in
+      decimal degrees. Returns hourly and/or daily time series starting from today.
+      Key response fields - hourly.temperature_2m (degrees Celsius), hourly.wind_speed_10m (km/h),
+      hourly.precipitation (mm), daily.temperature_2m_max, daily.temperature_2m_min,
+      daily.precipitation_sum (mm), daily.wind_speed_10m_max (km/h), each aligned with the
+      time array in the same block. For WEATHER_FORECAST questions ask for the future window
+      via forecast_days. For WEATHER_FORECAST_VERIFY questions use past_days to include
+      recent observed hours alongside the forecast. Units are always metric in this configuration.
+    intents: [WEATHER_FORECAST, WEATHER_FORECAST_VERIFY]
+    params:
+      query:
+        required:
+          - name: latitude
+            type: number
+            intents: ["*"]
+            description: "Latitude in decimal degrees, -90 to 90, e.g. 51.5."
+          - name: longitude
+            type: number
+            intents: ["*"]
+            description: "Longitude in decimal degrees, -180 to 180, e.g. -0.12."
+        optional:
+          - name: hourly
+            type: string
+            intents: ["*"]
+            description: "Comma-separated hourly variables, e.g. temperature_2m,wind_speed_10m,precipitation."
+          - name: daily
+            type: string
+            intents: ["*"]
+            description: "Comma-separated daily variables, e.g. temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max."
+          - name: forecast_days
+            type: integer
+            intents: ["*"]
+            description: "How many days ahead to forecast, 1 to 16. Defaults to 7."
+          - name: past_days
+            type: integer
+            intents: ["*"]
+            description: "How many days of past observed data to prepend, 0 to 92."
+          - name: models
+            type: string
+            intents: ["*"]
+            description: "Weather model id. This miner is pinned to icon_seamless (DWD ICON global). Do not send other values."
+    param_map:
+      latitude: latitude
+      longitude: longitude
+      hourly: hourly
+      daily: daily
+      forecast_days: forecast_days
+      past_days: past_days
+      models: models
+
+semantics:
+  supported_intents:
+    - WEATHER_FORECAST
+    - WEATHER_FORECAST_VERIFY
+
+output_schema:
+  type: object
+  properties:
+    latitude:
+      type: number
+    longitude:
+      type: number
+    hourly:
+      type: object
+      description: "Named arrays of hourly values plus a time array of ISO timestamps."
+    daily:
+      type: object
+      description: "Named arrays of daily values plus a time array of ISO dates."
+    hourly_units:
+      type: object
+    daily_units:
+      type: object
+
+limitations:
+  - code: MAX_PARAM_COUNT
+    message: Open-Meteo accepts at most ~50 variables per call; keep hourly and daily lists short.
+    property: count
+    operator: lte
+    value_num: 50
+
+cache_ttl_sec: 900
+rate_limit_per_sec: 10
