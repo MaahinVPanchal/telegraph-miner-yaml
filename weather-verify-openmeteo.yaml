@@ -13,6 +13,7 @@ docs:
 
 endpoints:
   - path: /v1/forecast
+    external_path: /v1/forecast
     method: GET
     description: >
       Weather forecast for a single point. Required query params are latitude and longitude in

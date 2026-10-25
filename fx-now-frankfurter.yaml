@@ -14,6 +14,7 @@ docs:
 
 endpoints:
   - path: /v1/latest
+    external_path: /v1/latest
     method: GET
     description: >
       Latest ECB-referenced mid-market FX rate. Returns {"amount", "base", "date", "rates"}

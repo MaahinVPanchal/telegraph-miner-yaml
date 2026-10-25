@@ -13,6 +13,7 @@ docs:
 
 endpoints:
   - path: /
+    external_path: /
     method: POST
     description: >
       JSON-RPC passthrough to a full Ethereum mainnet node. The request body MUST be a complete
