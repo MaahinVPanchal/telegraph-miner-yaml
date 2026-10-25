@@ -22,5 +22,9 @@ Note: `updateMiner` issues a new registrationId/intentId — anything targeting 
 
 ## Integrity
 
-- `onchain-metric-publicnode.yaml` sha256: `0x6114d18c02ee5fa24606dd496acc4b91eb54b6af4dec745d53323f8d75cca39c` (registered commitment)
-- Verify any time: `curl -s <raw-url> | sha256sum`
+- `onchain-metric-publicnode.yaml` sha256: `0xbfba9eb4740891147a48aa403be56ad50f53cc000997510ae5b1ba01093a6dd8` (registered, id 9602 — ACTIVE)
+- onchain-metric-publicnode.yaml sha256: `0xbfba9eb4740891147a48aa403be56ad50f53cc000997510ae5b1ba01093a6dd8` (ACTIVE, registration 4848)
+- weather-verify-openmeteo.yaml sha256: `0x56386e7f23e67ff2d5f92205b82c8b874a9d97063f8ab56ca143ef52aa17f40b` (ACTIVE, registration 4847)
+- fx-now-frankfurter.yaml sha256: `0xcf2df08ea7098c32733c0cbeed9bc98eeab2696e0eeccdc4dfad38ee810c13e6` (not yet registered)
+
+Verify any time: `curl -s <raw-url> | sha256sum`. NOTE: GitHub raw caches ~5 min — after pushing YAML changes, confirm the URL serves the new hash before registering/updating.
