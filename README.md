@@ -23,7 +23,7 @@ Note: `updateMiner` issues a new registrationId/intentId — anything targeting 
 ## Integrity
 
 - `onchain-metric-publicnode.yaml` sha256: `0xbfba9eb4740891147a48aa403be56ad50f53cc000997510ae5b1ba01093a6dd8` (registered, id 9602 — ACTIVE)
-- onchain-metric-publicnode.yaml sha256: `0xbfba9eb4740891147a48aa403be56ad50f53cc000997510ae5b1ba01093a6dd8` (ACTIVE, registration 4848)
+- onchain-metric-publicnode.yaml sha256: `0x87e4129e0a32878e4e93832b5f13a7c70272b100149d6cbaeffffe511265821c` (ACTIVE, registration 4849)
 - weather-verify-openmeteo.yaml sha256: `0x56386e7f23e67ff2d5f92205b82c8b874a9d97063f8ab56ca143ef52aa17f40b` (ACTIVE, registration 4847)
 - fx-now-frankfurter.yaml sha256: `0xcf2df08ea7098c32733c0cbeed9bc98eeab2696e0eeccdc4dfad38ee810c13e6` (not yet registered)
 
