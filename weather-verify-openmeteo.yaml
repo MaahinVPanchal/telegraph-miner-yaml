@@ -67,9 +67,44 @@ endpoints:
       models: models
 
 semantics:
+  signal_mapping:
+    label_field: hourly
   supported_intents:
     - WEATHER_FORECAST
     - WEATHER_FORECAST_VERIFY
+
+input_schema:
+  type: object
+  required: [latitude, longitude]
+  properties:
+    latitude:
+      type: number
+      description: Latitude in decimal degrees, -90 to 90.
+      default: 51.5
+    longitude:
+      type: number
+      description: Longitude in decimal degrees, -180 to 180.
+      default: -0.12
+
+on_chain:
+  description: Stores signal for WEATHER_FORECAST and WEATHER_FORECAST_VERIFY.
+  transform: direct
+  min_price_usdc: 0.01
+  fields:
+    strings:
+      - index: 0
+        name: result
+        description: Primary result
+        source_path: result
+      - index: 1
+        name: intent
+        description: Intent name
+        source_path: intent
+    integers:
+      - index: 0
+        name: ok
+        description: Success flag
+        source_path: ok
 
 output_schema:
   type: object
