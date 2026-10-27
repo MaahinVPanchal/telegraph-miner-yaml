@@ -8,7 +8,7 @@ Telegraph's nodes fetch a miner's YAML from a public URL at registration and ver
 
 | File | Intent served | Upstream (free, keyless) | Why |
 |---|---|---|---|
-| `onchain-metric-publicnode.yaml` | `ONCHAIN_METRIC_VERIFY` | PublicNode Ethereum RPC | Priority Intent (4 missions); current rank-1 incumbent scores 0.364 |
+| `onchain-metric-publicnode.yaml` | `ONCHAIN_METRIC_VERIFY` | Cloudflare Worker onchain-hybrid (archive JSON-RPC, Ethplorer fallback) | Priority Intent (4 missions); current rank-1 incumbent scores 0.364 |
 | `weather-verify-openmeteo.yaml` | `WEATHER_FORECAST` + `WEATHER_FORECAST_VERIFY` | Open-Meteo (ICON model) | Priority VERIFY Intent (5 missions); `WEATHER_FORECAST` rank-1 scores 0.001 |
 | `fx-now-frankfurter.yaml` | `FX_NOW` | Frankfurter (ECB) | Priority Intent (4 missions); learning miner — an `fx-frankfurter` already exists, differentiate before competing |
 
