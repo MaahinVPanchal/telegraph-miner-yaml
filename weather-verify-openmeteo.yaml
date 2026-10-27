@@ -40,29 +40,12 @@ endpoints:
           - name: hourly
             type: string
             intents: ["*"]
-            description: "Hourly variables. Send exactly one of the accepted values below, character for character; no other variable names are valid."
-            accepted_fields:
-              - value: temperature_2m,precipitation,precipitation_probability,wind_speed_10m
-                intents: ["*"]
-                description: Temperature, precipitation amount, precipitation probability and wind speed. Use this unless the question is only about one quantity.
-              - value: temperature_2m
-                intents: ["*"]
-                description: Temperature only.
-              - value: precipitation,precipitation_probability
-                intents: ["*"]
-                description: Rain/precipitation only.
-              - value: wind_speed_10m
-                intents: ["*"]
-                description: Wind only.
+            description: "Hourly variables. Send exactly one of these four values, character for character, and nothing else: (1) temperature_2m,precipitation,precipitation_probability,wind_speed_10m - temperature, precipitation amount, precipitation probability and wind speed; use this unless the question is only about one quantity. (2) temperature_2m - temperature only. (3) precipitation,precipitation_probability - rain/precipitation only. (4) wind_speed_10m - wind only. No other variable names are valid."
         optional:
           - name: daily
             type: string
             intents: ["*"]
-            description: "Daily variables. If sent, send exactly this accepted value; no other variable names are valid."
-            accepted_fields:
-              - value: temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max
-                intents: ["*"]
-                description: Daily max/min temperature, precipitation total and max wind.
+            description: "Daily variables. If sent, send exactly temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max (daily max/min temperature, precipitation total and max wind) and nothing else. No other variable names are valid."
           - name: forecast_days
             type: integer
             intents: ["*"]
@@ -74,11 +57,7 @@ endpoints:
           - name: models
             type: string
             intents: ["*"]
-            description: "Weather model. Usually omit it. If sent, only best_match is allowed."
-            accepted_fields:
-              - value: best_match
-                intents: ["*"]
-                description: Open-Meteo's default blend of the best models for the location.
+            description: "Weather model. Usually omit it. If sent, the only allowed value is best_match (Open-Meteo's default blend of the best models for the location)."
     param_map:
       latitude: latitude
       longitude: longitude
