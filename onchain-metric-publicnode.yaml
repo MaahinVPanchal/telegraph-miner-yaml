@@ -3,24 +3,27 @@ kind: miner
 id: 9602
 slug: onchain-metric-publicnode
 protocol: generic
-name: OnChain Metric Verify (Blockscout Ethereum)
-description: Reads canonical on-chain state directly from the Blockscout Ethereum API - balances, token holdings, transaction counts, contract code - returned as decimal values. Answers "what is the ETH balance of address X" and "what does this address hold" with values read straight from chain.
-base_url: https://eth.blockscout.com
+name: OnChain Metric Verify (Ethplorer Ethereum)
+description: Reads canonical on-chain state directly from the Ethplorer Ethereum API - address balances in ETH units, token holdings, and contract info - returned as clean decimal JSON. Answers "what is the ETH balance of address X", "which tokens does address X hold", and contract-verification questions with values read straight from chain.
+base_url: https://api.ethplorer.io
 
 docs:
-  website: https://blockscout.com
-  documentation: https://eth.blockscout.com/docs
+  website: https://ethplorer.io
+  documentation: https://github.com/EverexIO/Ethplorer/wiki/Ethplorer-API
 
 endpoints:
   - path: /query
-    external_path: /api/v2/addresses/{address}
+    external_path: /getAddressInfo/{address}
     method: GET
     description: >
-      On-chain address metrics for intent ONCHAIN_METRIC_VERIFY. The response contains
-      coin_balance - the address's ETH balance in DECIMAL wei (not hex) - plus
-      exchange_rate, token counts and transaction counts. The answer value for
-      ONCHAIN_METRIC_VERIFY is the number at coin_balance. Convert wei to ETH (divide
-      by 1e18) only when the question asks for ETH units; otherwise report the wei value.
+      Full address information for intent ONCHAIN_METRIC_VERIFY. The response contains
+      an ETH object whose balance field holds the address's ETH balance in ETH units
+      (decimal, e.g. 5.77), a tokens array with each held token's tokenInfo (symbol,
+      decimals) and balance in raw token units, and contract info when the address is
+      a contract. For "what is the ETH balance of address X" questions, answer with
+      ETH.balance. For "which tokens does address X hold" questions, list the tokens
+      array with symbols and balances (divide raw balance by the token's decimals).
+      For contract questions, report whether contractInfo is present.
     intents: [ONCHAIN_METRIC_VERIFY]
     params:
       path:
@@ -29,41 +32,31 @@ endpoints:
             type: string
             intents: ["*"]
             description: "EVM address to query, 0x-prefixed 40 hex characters, e.g. 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045."
+      query:
+        required:
+          - name: apiKey
+            type: string
+            intents: ["*"]
+            description: "Ethplorer API key. Always send the literal value freekey (the free public key)."
 
 semantics:
   signal_mapping:
-    label_field: coin_balance
+    label_field: ETH
   supported_intents:
     - ONCHAIN_METRIC_VERIFY
 
 input_schema:
   type: object
-  required: [address]
+  required: [address, apiKey]
   properties:
     address:
       type: string
       description: EVM address, 0x-prefixed 40 hex characters.
       default: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"
-
-on_chain:
-  description: Stores signal for ONCHAIN_METRIC_VERIFY (Semantic V2 format-agnostic).
-  transform: direct
-  min_price_usdc: 0.01
-  fields:
-    strings:
-      - index: 0
-        name: result
-        description: Primary result
-        source_path: result
-      - index: 1
-        name: intent
-        description: Intent name
-        source_path: intent
-    integers:
-      - index: 0
-        name: ok
-        description: Success flag
-        source_path: ok
+    apiKey:
+      type: string
+      description: Ethplorer API key.
+      default: "freekey"
 
 cache_ttl_sec: 2
-rate_limit_per_sec: 10
+rate_limit_per_sec: 5
