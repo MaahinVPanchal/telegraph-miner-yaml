@@ -3,8 +3,8 @@ kind: miner
 id: 9603
 slug: weather-verify-openmeteo
 protocol: generic
-name: Weather Forecast Verify (Open-Meteo ICON)
-description: Location-based weather forecast and observation reconciliation from the Open-Meteo aggregator pinned to the ICON model. Answers "what will the temperature/wind/precipitation be at latitude X longitude Y over the next N hours/days" with hourly and daily values in metric units.
+name: Weather Forecast Verify (Open-Meteo)
+description: Point weather forecasts and recent observed weather from the Open-Meteo API (default best_match model blend). Answers "what will the temperature/wind/precipitation be at latitude X longitude Y over the next N days" (WEATHER_FORECAST) and "did a forecast for latitude X longitude Y over the past N days verify against what was observed" (WEATHER_FORECAST_VERIFY) with hourly and daily values in metric units.
 base_url: https://api.open-meteo.com
 
 docs:
@@ -16,14 +16,15 @@ endpoints:
     external_path: /v1/forecast
     method: GET
     description: >
-      Weather forecast for a single point. Required query params are latitude and longitude in
-      decimal degrees. Returns hourly and/or daily time series starting from today.
-      Key response fields - hourly.temperature_2m (degrees Celsius), hourly.wind_speed_10m (km/h),
-      hourly.precipitation (mm), daily.temperature_2m_max, daily.temperature_2m_min,
-      daily.precipitation_sum (mm), daily.wind_speed_10m_max (km/h), each aligned with the
-      time array in the same block. For WEATHER_FORECAST questions ask for the future window
-      via forecast_days. For WEATHER_FORECAST_VERIFY questions use past_days to include
-      recent observed hours alongside the forecast. Units are always metric in this configuration.
+      Weather for a single point. Always send latitude, longitude and hourly; the response has no
+      weather values at all unless hourly (or daily) is sent. Returns hourly and optionally daily
+      time series in metric units - hourly.temperature_2m (degrees Celsius), hourly.precipitation (mm),
+      hourly.precipitation_probability (percent), hourly.wind_speed_10m (km/h); daily.temperature_2m_max,
+      daily.temperature_2m_min, daily.precipitation_sum (mm), daily.wind_speed_10m_max (km/h) - each
+      aligned with the time array in the same block. For WEATHER_FORECAST questions set forecast_days
+      to the window asked (1 to 7) and past_days to 0. For WEATHER_FORECAST_VERIFY questions set
+      past_days to cover the past window being verified (1 to 7); values for past hours are the
+      observed/analysed values to compare the issued forecast against.
     intents: [WEATHER_FORECAST, WEATHER_FORECAST_VERIFY]
     params:
       query:
@@ -36,27 +37,48 @@ endpoints:
             type: number
             intents: ["*"]
             description: "Longitude in decimal degrees, -180 to 180, e.g. -0.12."
-        optional:
           - name: hourly
             type: string
             intents: ["*"]
-            description: "Comma-separated hourly variables, e.g. temperature_2m,wind_speed_10m,precipitation."
+            description: "Hourly variables. Send exactly one of the accepted values below, character for character; no other variable names are valid."
+            accepted_fields:
+              - value: temperature_2m,precipitation,precipitation_probability,wind_speed_10m
+                intents: ["*"]
+                description: Temperature, precipitation amount, precipitation probability and wind speed. Use this unless the question is only about one quantity.
+              - value: temperature_2m
+                intents: ["*"]
+                description: Temperature only.
+              - value: precipitation,precipitation_probability
+                intents: ["*"]
+                description: Rain/precipitation only.
+              - value: wind_speed_10m
+                intents: ["*"]
+                description: Wind only.
+        optional:
           - name: daily
             type: string
             intents: ["*"]
-            description: "Comma-separated daily variables, e.g. temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max."
+            description: "Daily variables. If sent, send exactly this accepted value; no other variable names are valid."
+            accepted_fields:
+              - value: temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max
+                intents: ["*"]
+                description: Daily max/min temperature, precipitation total and max wind.
           - name: forecast_days
             type: integer
             intents: ["*"]
-            description: "How many days ahead to forecast, 1 to 16. Defaults to 7."
+            description: "Days ahead to forecast, integer 1 to 7 only (never more than 7). Defaults to 7."
           - name: past_days
             type: integer
             intents: ["*"]
-            description: "How many days of past observed data to prepend, 0 to 92."
+            description: "Days of past observed data to prepend, integer 0 to 7 only (never more than 7). Use 0 for WEATHER_FORECAST, 1 to 7 for WEATHER_FORECAST_VERIFY."
           - name: models
             type: string
             intents: ["*"]
-            description: "Weather model id. This miner is pinned to icon_seamless (DWD ICON global). Do not send other values."
+            description: "Weather model. Usually omit it. If sent, only best_match is allowed."
+            accepted_fields:
+              - value: best_match
+                intents: ["*"]
+                description: Open-Meteo's default blend of the best models for the location.
     param_map:
       latitude: latitude
       longitude: longitude
@@ -75,36 +97,47 @@ semantics:
 
 input_schema:
   type: object
-  required: [latitude, longitude]
+  required: [latitude, longitude, hourly]
   properties:
     latitude:
       type: number
       description: Latitude in decimal degrees, -90 to 90.
+      minimum: -90
+      maximum: 90
       default: 51.5
     longitude:
       type: number
       description: Longitude in decimal degrees, -180 to 180.
+      minimum: -180
+      maximum: 180
       default: -0.12
-
-on_chain:
-  description: Stores signal for WEATHER_FORECAST and WEATHER_FORECAST_VERIFY.
-  transform: direct
-  min_price_usdc: 0.01
-  fields:
-    strings:
-      - index: 0
-        name: result
-        description: Primary result
-        source_path: result
-      - index: 1
-        name: intent
-        description: Intent name
-        source_path: intent
-    integers:
-      - index: 0
-        name: ok
-        description: Success flag
-        source_path: ok
+    hourly:
+      type: string
+      description: One of the accepted hourly variable lists.
+      enum:
+        - temperature_2m,precipitation,precipitation_probability,wind_speed_10m
+        - temperature_2m
+        - precipitation,precipitation_probability
+        - wind_speed_10m
+      default: temperature_2m,precipitation,precipitation_probability,wind_speed_10m
+    daily:
+      type: string
+      enum:
+        - temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max
+    forecast_days:
+      type: integer
+      minimum: 1
+      maximum: 7
+      default: 7
+    past_days:
+      type: integer
+      minimum: 0
+      maximum: 7
+      default: 0
+    models:
+      type: string
+      enum: [best_match]
+      default: best_match
 
 output_schema:
   type: object
