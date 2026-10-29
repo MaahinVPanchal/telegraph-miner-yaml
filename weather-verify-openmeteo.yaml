@@ -25,7 +25,7 @@ endpoints:
       to the window asked (1 to 7) and past_days to 0. For WEATHER_FORECAST_VERIFY questions set
       past_days to cover the past window being verified (1 to 7); values for past hours are the
       observed/analysed values to compare the issued forecast against.
-    intents: [WEATHER_FORECAST, WEATHER_FORECAST_VERIFY]
+    intents: [WEATHER_FORECAST_GENERAL, WEATHER_FORECAST_VERIFY_GENERAL]
     params:
       query:
         required:

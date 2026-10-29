@@ -21,8 +21,8 @@ endpoints:
       where rates maps each requested quote currency to the amount of that currency per 1 unit
       of the base currency. Call with base set to the 3-letter ISO currency code you are selling
       (e.g. USD) and symbols set to the 3-letter ISO code you are buying (e.g. EUR).
-      The answer value for FX_NOW is the number at rates.<quote>, e.g. 0.89342 means 1 USD = 0.89342 EUR.
-    intents: [FX_NOW]
+      For FX_NOW_EUR questions send base=USD and symbols=EUR; for FX_NOW_CAD send base=USD symbols=CAD; for FX_NOW_SEK send base=USD symbols=SEK. The answer value is the number at rates.<quote>, e.g. 0.89342 means 1 USD = 0.89342 EUR.
+    intents: [FX_NOW_EUR, FX_NOW_CAD, FX_NOW_SEK]
     params:
       query:
         required:
@@ -40,7 +40,9 @@ endpoints:
 
 semantics:
   supported_intents:
-    - FX_NOW
+    - FX_NOW_EUR
+    - FX_NOW_CAD
+    - FX_NOW_SEK
 
 output_schema:
   type: object
