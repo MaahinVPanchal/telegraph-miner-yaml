@@ -1,0 +1,98 @@
+version: "1"
+kind: miner
+id: 9602
+slug: onchain-metric-publicnode
+protocol: generic
+name: OnChain Metric Verify (Ethplorer Ethereum)
+description: Reads the latest on-chain ETH balance of an Ethereum mainnet address from the Ethplorer API and returns a small JSON answer (under 1 KB) with ETH.balance in decimal ETH and ETH.rawBalance in wei. Serves ONCHAIN_METRIC_VERIFY questions anchored at "latest" about an address's native ETH balance. Current state only - Ethplorer has no historical-block parameter, so a block_number in the request is accepted but the value returned is always the latest balance.
+base_url: https://api.ethplorer.io
+
+docs:
+  website: https://ethplorer.io
+  documentation: https://github.com/EverexIO/Ethplorer/wiki/Ethplorer-API
+
+endpoints:
+  - path: /query
+    external_path: /getAddressInfo/{address}
+    method: GET
+    description: >
+      Latest native ETH balance of one Ethereum mainnet address, for intent ONCHAIN_METRIC_VERIFY.
+      The response is a small JSON object - address, ETH.balance (the balance in ETH units, a
+      decimal such as 5.773572485065093), ETH.rawBalance (the same balance in wei, an exact integer
+      string such as "5773572485065093054"), ETH.price (USD market data, not the answer) and
+      contractInfo (present and non-empty only when the address is a contract). Answer with
+      ETH.balance when the question asks for ETH, and with ETH.rawBalance when it asks for wei.
+      The token list is deliberately suppressed by the token and showETHTotals constants below, so
+      this endpoint does not answer token-holding questions. The value is always the latest
+      state; Ethplorer ignores any block height.
+    intents: [ONCHAIN_METRIC_VERIFY_GENERAL]
+    params:
+      path:
+        required:
+          - name: address
+            type: string
+            intents: ["*"]
+            description: "EVM address to query, 0x-prefixed followed by exactly 40 hex characters (42 characters total), e.g. 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045. Not an ENS name."
+      query:
+        required:
+          - name: apiKey
+            type: string
+            intents: ["*"]
+            description: "Ethplorer API key. Always send the literal value freekey (the free public key)."
+          - name: token
+            type: string
+            intents: ["*"]
+            description: "Constant. Always send the literal value 0x0000000000000000000000000000000000000000. It filters the token list down to nothing so the answer stays under 1 KB; the ETH balance is unaffected."
+          - name: showETHTotals
+            type: string
+            intents: ["*"]
+            description: "Constant. Always send the literal value false."
+
+semantics:
+  signal_mapping:
+    label_field: ETH
+  supported_intents:
+    - ONCHAIN_METRIC_VERIFY
+
+input_schema:
+  type: object
+  required: [address, apiKey, token, showETHTotals]
+  properties:
+    address:
+      type: string
+      description: EVM address, 0x-prefixed 40 hex characters.
+      pattern: "^0x[0-9a-fA-F]{40}$"
+      default: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"
+    apiKey:
+      type: string
+      description: Ethplorer API key. Always freekey.
+      default: "freekey"
+    token:
+      type: string
+      description: Constant token filter that suppresses the token list.
+      default: "0x0000000000000000000000000000000000000000"
+    showETHTotals:
+      type: string
+      description: Constant. Always false.
+      default: "false"
+
+output_schema:
+  type: object
+  properties:
+    address:
+      type: string
+      description: Lower-cased echo of the queried address.
+    ETH:
+      type: object
+      description: "balance (number, ETH units), rawBalance (string, wei) and price (USD market data, not the answer)."
+    contractInfo:
+      type: object
+      description: Non-empty only when the address is a contract.
+
+# intent_mapping intentionally omitted: GET /engine/v1/intents/ONCHAIN_METRIC_VERIFY on the
+# live node returns no response.fields, so the intent's output field names cannot be confirmed.
+
+cache_ttl_sec: 2
+rate_limit_per_sec: 2
+circuit_threshold: 5
+circuit_cooldown_seconds: 30

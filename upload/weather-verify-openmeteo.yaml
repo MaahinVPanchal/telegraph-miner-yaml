@@ -1,0 +1,147 @@
+version: "1"
+kind: miner
+id: 9603
+slug: weather-verify-openmeteo
+protocol: generic
+name: Weather Forecast Verify (Open-Meteo)
+description: Point weather forecasts and recent observed weather from the Open-Meteo API (default best_match model blend). Answers "what will the temperature/wind/precipitation be at latitude X longitude Y over the next N days" (WEATHER_FORECAST) and "did a forecast for latitude X longitude Y over the past N days verify against what was observed" (WEATHER_FORECAST_VERIFY) with hourly and daily values in metric units.
+base_url: https://api.open-meteo.com
+
+docs:
+  website: https://open-meteo.com
+  documentation: https://open-meteo.com/en/docs
+
+endpoints:
+  - path: /v1/forecast
+    external_path: /v1/forecast
+    method: GET
+    description: >
+      Weather for a single point. Always send latitude, longitude and hourly; the response has no
+      weather values at all unless hourly (or daily) is sent. Returns hourly and optionally daily
+      time series in metric units - hourly.temperature_2m (degrees Celsius), hourly.precipitation (mm),
+      hourly.precipitation_probability (percent), hourly.wind_speed_10m (km/h); daily.temperature_2m_max,
+      daily.temperature_2m_min, daily.precipitation_sum (mm), daily.wind_speed_10m_max (km/h) - each
+      aligned with the time array in the same block. For WEATHER_FORECAST questions set forecast_days
+      to the window asked (1 to 7) and past_days to 0. For WEATHER_FORECAST_VERIFY questions set
+      past_days to cover the past window being verified (1 to 7); values for past hours are the
+      observed/analysed values to compare the issued forecast against.
+    intents: [WEATHER_FORECAST_GENERAL, WEATHER_FORECAST_VERIFY_GENERAL]
+    params:
+      query:
+        required:
+          - name: latitude
+            type: number
+            intents: ["*"]
+            description: "Latitude in decimal degrees, -90 to 90, e.g. 51.5."
+          - name: longitude
+            type: number
+            intents: ["*"]
+            description: "Longitude in decimal degrees, -180 to 180, e.g. -0.12."
+          - name: hourly
+            type: string
+            intents: ["*"]
+            description: "Hourly variables. Send exactly one of these four values, character for character, and nothing else: (1) temperature_2m,precipitation,precipitation_probability,wind_speed_10m - temperature, precipitation amount, precipitation probability and wind speed; use this unless the question is only about one quantity. (2) temperature_2m - temperature only. (3) precipitation,precipitation_probability - rain/precipitation only. (4) wind_speed_10m - wind only. No other variable names are valid."
+        optional:
+          - name: daily
+            type: string
+            intents: ["*"]
+            description: "Daily variables. If sent, send exactly temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max (daily max/min temperature, precipitation total and max wind) and nothing else. No other variable names are valid."
+          - name: forecast_days
+            type: integer
+            intents: ["*"]
+            description: "Days ahead to forecast, integer 1 to 7 only (never more than 7). Defaults to 7."
+          - name: past_days
+            type: integer
+            intents: ["*"]
+            description: "Days of past observed data to prepend, integer 0 to 7 only (never more than 7). Use 0 for WEATHER_FORECAST, 1 to 7 for WEATHER_FORECAST_VERIFY."
+          - name: models
+            type: string
+            intents: ["*"]
+            description: "Weather model. Usually omit it. If sent, the only allowed value is best_match (Open-Meteo's default blend of the best models for the location)."
+    param_map:
+      latitude: latitude
+      longitude: longitude
+      hourly: hourly
+      daily: daily
+      forecast_days: forecast_days
+      past_days: past_days
+      models: models
+
+semantics:
+  signal_mapping:
+    label_field: hourly
+  supported_intents:
+    - WEATHER_FORECAST
+    - WEATHER_FORECAST_VERIFY
+
+input_schema:
+  type: object
+  required: [latitude, longitude, hourly]
+  properties:
+    latitude:
+      type: number
+      description: Latitude in decimal degrees, -90 to 90.
+      minimum: -90
+      maximum: 90
+      default: 51.5
+    longitude:
+      type: number
+      description: Longitude in decimal degrees, -180 to 180.
+      minimum: -180
+      maximum: 180
+      default: -0.12
+    hourly:
+      type: string
+      description: One of the accepted hourly variable lists.
+      enum:
+        - temperature_2m,precipitation,precipitation_probability,wind_speed_10m
+        - temperature_2m
+        - precipitation,precipitation_probability
+        - wind_speed_10m
+      default: temperature_2m,precipitation,precipitation_probability,wind_speed_10m
+    daily:
+      type: string
+      enum:
+        - temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max
+    forecast_days:
+      type: integer
+      minimum: 1
+      maximum: 7
+      default: 7
+    past_days:
+      type: integer
+      minimum: 0
+      maximum: 7
+      default: 0
+    models:
+      type: string
+      enum: [best_match]
+      default: best_match
+
+output_schema:
+  type: object
+  properties:
+    latitude:
+      type: number
+    longitude:
+      type: number
+    hourly:
+      type: object
+      description: "Named arrays of hourly values plus a time array of ISO timestamps."
+    daily:
+      type: object
+      description: "Named arrays of daily values plus a time array of ISO dates."
+    hourly_units:
+      type: object
+    daily_units:
+      type: object
+
+limitations:
+  - code: MAX_PARAM_COUNT
+    message: Open-Meteo accepts at most ~50 variables per call; keep hourly and daily lists short.
+    property: count
+    operator: lte
+    value_num: 50
+
+cache_ttl_sec: 900
+rate_limit_per_sec: 10
