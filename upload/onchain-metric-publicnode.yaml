@@ -52,7 +52,7 @@ semantics:
   signal_mapping:
     label_field: ETH
   supported_intents:
-    - ONCHAIN_METRIC_VERIFY
+    - ONCHAIN_METRIC_VERIFY_GENERAL
 
 input_schema:
   type: object

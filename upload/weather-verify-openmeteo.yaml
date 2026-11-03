@@ -71,8 +71,8 @@ semantics:
   signal_mapping:
     label_field: hourly
   supported_intents:
-    - WEATHER_FORECAST
-    - WEATHER_FORECAST_VERIFY
+    - WEATHER_FORECAST_GENERAL
+    - WEATHER_FORECAST_VERIFY_GENERAL
 
 input_schema:
   type: object
