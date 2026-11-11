@@ -1,0 +1,245 @@
+version: "1"
+kind: miner
+id: 9602
+slug: onchain-metric-publicnode
+protocol: generic
+name: OnChain Metric Verify (Public proposal; not deployed)
+description: >
+  Publicly committed worker proposal for Ethereum mainnet, Polygon PoS and Arbitrum One. It requires an explicit
+  an explicit chain identifier and metric, returns exact values with chain/block/source provenance, and never guesses a network
+  or substitutes latest state for a historical block. The live Engine intent currently declares only
+  address and block and scores balance_gwei; extra inputs and outputs remain unvalidated and unscored.
+base_url: http://localhost:8787
+
+docs:
+  website: https://hackathon.telegraphprotocol.com/missions/web3-defi
+  documentation: https://anjoman.ai/docs/miners/yaml-config
+
+endpoints:
+  - path: /query
+    external_path: /query
+    method: GET
+    description: >
+      Local proposal for explicit operation requests. Supply chain or chain_id plus metric. Balance,
+      nonce, code and token-balance operations use address and an optional block_number (default latest).
+      tx_receipt uses tx_hash. logs uses a bounded from_block/to_block range plus address or topic0-topic3.
+      total_supply requires a numbered block_number and token contract and means ERC-20 totalSupply, not circulating
+      supply. Receipt gas_used, effective_gas_price_wei and fee_paid_wei are separate evidence fields;
+      an unspecified generic gas question is not interpreted. Questions are rejected rather than guessed.
+      Errors use real non-2xx HTTP statuses.
+    intents: [ONCHAIN_METRIC_VERIFY_GENERAL]
+    params:
+      query:
+        required:
+          - name: metric
+            type: string
+            intents: ["*"]
+            description: "eth_balance, tx_count, code, erc20_balance, tx_receipt, logs or total_supply."
+        optional:
+          - name: chain
+            type: string
+            intents: ["*"]
+            description: "Explicit network: ethereum, polygon or arbitrum-one; numeric chain IDs are accepted."
+          - name: chain_id
+            type: string
+            intents: ["*"]
+            description: "Explicit numeric chain ID alias; if provided with chain, both must identify the same supported chain."
+          - name: address
+            type: string
+            intents: ["*"]
+            description: "Wallet for balance/nonce/code/token-balance, or contract address for logs."
+          - name: block_number
+            type: string
+            intents: ["*"]
+            description: "State-read block; latest is allowed except total_supply, which requires a numbered block."
+          - name: token
+            type: string
+            intents: ["*"]
+            description: "ERC-20 contract for erc20_balance or total_supply."
+          - name: tx_hash
+            type: string
+            intents: ["*"]
+            description: "0x-prefixed 32-byte transaction hash for tx_receipt."
+          - name: from_block
+            type: string
+            intents: ["*"]
+            description: "Required numbered lower bound for logs."
+          - name: to_block
+            type: string
+            intents: ["*"]
+            description: "Required numbered upper bound for logs; block-number difference is limited to 2,000."
+          - name: topic0
+            type: string
+            intents: ["*"]
+            description: "Optional 32-byte event signature topic."
+          - name: topic1
+            type: string
+            intents: ["*"]
+            description: "Optional 32-byte event topic."
+          - name: topic2
+            type: string
+            intents: ["*"]
+            description: "Optional 32-byte event topic."
+          - name: topic3
+            type: string
+            intents: ["*"]
+            description: "Optional 32-byte event topic."
+
+# input_schema is local interface metadata, not proof that the Engine router accepts these fields.
+# No intent_mapping is declared: only balance_gwei is currently scored by the live intent.
+input_schema:
+  type: object
+  required: [metric]
+  properties:
+    chain:
+      type: string
+      enum: [ethereum, polygon, arbitrum-one, "1", "137", "42161"]
+    chain_id:
+      type: string
+      enum: ["1", "137", "42161"]
+    metric:
+      type: string
+      enum: [eth_balance, tx_count, code, erc20_balance, tx_receipt, logs, total_supply]
+    address:
+      type: string
+      pattern: "^0x[0-9a-fA-F]{40}$"
+    block_number:
+      type: string
+      pattern: "^(latest|0x[0-9a-fA-F]+|[0-9]+)$"
+      description: Required and numbered (not latest) when metric is total_supply.
+    token:
+      type: string
+      pattern: "^0x[0-9a-fA-F]{40}$"
+    tx_hash:
+      type: string
+      pattern: "^0x[0-9a-fA-F]{64}$"
+    from_block:
+      type: string
+      pattern: "^(0x[0-9a-fA-F]+|[0-9]+)$"
+    to_block:
+      type: string
+      pattern: "^(0x[0-9a-fA-F]+|[0-9]+)$"
+    topic0:
+      type: string
+      pattern: "^0x[0-9a-fA-F]{64}$"
+    topic1:
+      type: string
+      pattern: "^0x[0-9a-fA-F]{64}$"
+    topic2:
+      type: string
+      pattern: "^0x[0-9a-fA-F]{64}$"
+    topic3:
+      type: string
+      pattern: "^0x[0-9a-fA-F]{64}$"
+  anyOf:
+    - required: [chain]
+    - required: [chain_id]
+  allOf:
+    - if:
+        properties:
+          metric:
+            const: total_supply
+        required: [metric]
+      then:
+        required: [block_number]
+        properties:
+          block_number:
+            type: string
+            pattern: "^(0x[0-9a-fA-F]+|[0-9]+)$"
+
+output_schema:
+  type: object
+  properties:
+    ok:
+      type: boolean
+    metric:
+      type: string
+    chain:
+      type: string
+      enum: [ethereum, polygon, arbitrum-one]
+    requested_chain:
+      type: string
+    chain_id:
+      type: integer
+    requested_block:
+      type: [string, "null"]
+    block:
+      type: [integer, "null"]
+    block_hash:
+      type: [string, "null"]
+      description: Present only for a mined receipt after transaction/receipt identity checks.
+    block_tag:
+      type: string
+    address:
+      type: [string, "null"]
+    token:
+      type: string
+    tx_hash:
+      type: string
+    value:
+      type: [string, boolean]
+    unit:
+      type: string
+    native_symbol:
+      type: string
+    balance_native:
+      type: string
+    balance_wei:
+      type: string
+    balance_eth:
+      type: string
+      description: Present only for ETH-native chains.
+    balance_gwei:
+      type: number
+      description: Present only for ETH-native balance operations; this is the live intent's scored field.
+    nonce:
+      type: string
+      description: Account nonce, not total transaction activity.
+    has_code:
+      type: boolean
+    code_size_bytes:
+      type: integer
+    raw_balance:
+      type: string
+    raw_total_supply:
+      type: string
+    decimals:
+      type: [integer, "null"]
+    decimals_error:
+      type: string
+    state:
+      type: string
+      enum: [pending, mined]
+    receipt_status:
+      type: [integer, "null"]
+    gas_used:
+      type: string
+    effective_gas_price_wei:
+      type: [string, "null"]
+    fee_paid_wei:
+      type: [string, "null"]
+    fee_status:
+      type: string
+    from_block:
+      type: integer
+    to_block:
+      type: integer
+    count:
+      type: integer
+    logs:
+      type: array
+    source:
+      type: string
+    sources:
+      type: array
+    as_of:
+      type: string
+    error:
+      type: string
+    message:
+      type: string
+
+cache_ttl_sec: 2
+rate_limit_per_sec: 5
+circuit_threshold: 5
+circuit_cooldown_seconds: 30
