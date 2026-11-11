@@ -3,9 +3,9 @@ kind: miner
 id: 9602
 slug: onchain-metric-publicnode
 protocol: generic
-name: OnChain Metric Verify (Local multichain proposal; do not publish)
+name: OnChain Metric Verify (Public proposal; not deployed)
 description: >
-  Local-only worker proposal for Ethereum mainnet, Polygon PoS and Arbitrum One. It requires an explicit
+  Publicly committed worker proposal for Ethereum mainnet, Polygon PoS and Arbitrum One. It requires an explicit
   an explicit chain identifier and metric, returns exact values with chain/block/source provenance, and never guesses a network
   or substitutes latest state for a historical block. The live Engine intent currently declares only
   address and block and scores balance_gwei; extra inputs and outputs remain unvalidated and unscored.
@@ -165,6 +165,9 @@ output_schema:
       type: [string, "null"]
     block:
       type: [integer, "null"]
+    block_hash:
+      type: [string, "null"]
+      description: Present only for a mined receipt after transaction/receipt identity checks.
     block_tag:
       type: string
     address:
